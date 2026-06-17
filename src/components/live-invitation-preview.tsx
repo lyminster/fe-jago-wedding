@@ -303,9 +303,17 @@ export function LiveInvitationPreview({
     data.photos.gallery.length > 0 ? data.photos.gallery : fallbackGallery;
   const gallerySignature = galleryPhotos.map((photo) => photo.url).join("|");
   const heroImage = data.photos.cover?.url ?? style.heroImage;
-  const youtubeAutoplaySrc = getYoutubeAutoplaySrc(data.music.youtubeUrl);
+  const [youtubeOrigin, setYoutubeOrigin] = useState("");
+  const youtubeAutoplaySrc = getYoutubeAutoplaySrc(
+    data.music.youtubeUrl,
+    youtubeOrigin,
+  );
   const canShareInvitation = isInvitationPubliclyActive(invitationMeta);
   const shareDisabledReason = getShareDisabledReason(invitationMeta);
+
+  useEffect(() => {
+    setYoutubeOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     if (!guestComments) return;
@@ -387,6 +395,8 @@ export function LiveInvitationPreview({
   }, [activeTemplate, gallerySignature, isStandalone]);
 
   function handleEnter() {
+    startMusic();
+
     if (!contentRef.current) return;
 
     if (isStandalone) {
@@ -489,6 +499,16 @@ export function LiveInvitationPreview({
     );
   }
 
+  function startMusic() {
+    if (youtubeAutoplaySrc === "about:blank") {
+      setIsMusicPlaying(false);
+      return;
+    }
+
+    sendYoutubeCommand("playVideo");
+    setIsMusicPlaying(true);
+  }
+
   function handleMusicToggle() {
     if (isMusicPlaying) {
       sendYoutubeCommand("pauseVideo");
@@ -524,13 +544,16 @@ export function LiveInvitationPreview({
       }`}
     >
             <TemplateEffect type={style.effect} />
-            <iframe
-              ref={musicIframeRef}
-              className="pointer-events-none absolute h-0 w-0 opacity-0"
-              title="YouTube music player"
-              src={youtubeAutoplaySrc}
-              allow="autoplay; encrypted-media"
-            />
+      <iframe
+        ref={musicIframeRef}
+        className="pointer-events-none absolute h-0 w-0 opacity-0"
+        title="YouTube music player"
+        src={youtubeAutoplaySrc}
+        allow="autoplay; encrypted-media; picture-in-picture"
+        onLoad={() => {
+          window.setTimeout(startMusic, 600);
+        }}
+      />
             {!isStandalone ? (
               <div className="pointer-events-none absolute left-1/2 top-2 z-50 h-5 w-24 -translate-x-1/2 rounded-full bg-[#252b27]" />
             ) : null}
@@ -1271,11 +1294,24 @@ function formatCommentDate(submittedAt: string) {
     .replace(".", ":");
 }
 
-function getYoutubeAutoplaySrc(url: string) {
+function getYoutubeAutoplaySrc(url: string, origin = "") {
   const videoId = getYoutubeVideoId(url);
   if (!videoId) return "about:blank";
 
-  return `https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&controls=0&loop=1&enablejsapi=1&playlist=${videoId}`;
+  const params = new URLSearchParams({
+    autoplay: "1",
+    controls: "0",
+    enablejsapi: "1",
+    loop: "1",
+    playlist: videoId,
+    playsinline: "1",
+  });
+
+  if (origin) {
+    params.set("origin", origin);
+  }
+
+  return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
 }
 
 function getYoutubeVideoId(url: string) {
