@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
         port: "8080",
         protocol: "http",
       },
+      {
+        hostname: "be-jago-wedding-production.up.railway.app",
+        protocol: "https",
+      },
     ],
   },
 };
