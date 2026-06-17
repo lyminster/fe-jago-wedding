@@ -59,8 +59,8 @@ Saat host cocok dengan pola subdomain, request `/` akan di-rewrite ke `/undangan
 Copy `.env.example` menjadi `.env.local`.
 
 ```bash
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
-NEXT_PUBLIC_APP_URL=http://localhost:3001
+NEXT_PUBLIC_API_BASE_URL=https://be-jago-wedding-production.up.railway.app
+NEXT_PUBLIC_APP_URL=https://jago-wedding.up.railway.app
 NEXT_PUBLIC_PUBLIC_INVITATION_DOMAIN=jago-wedding.up.railway.app
 NEXT_PUBLIC_MIDTRANS_CLIENT_KEY=
 NEXT_PUBLIC_MIDTRANS_SNAP_URL=https://app.sandbox.midtrans.com/snap/snap.js
@@ -69,7 +69,7 @@ NEXT_PUBLIC_MIDTRANS_SNAP_URL=https://app.sandbox.midtrans.com/snap/snap.js
 Untuk production, ubah:
 
 ```bash
-NEXT_PUBLIC_API_BASE_URL=https://<backend-production-url>
+NEXT_PUBLIC_API_BASE_URL=https://be-jago-wedding-production.up.railway.app
 NEXT_PUBLIC_APP_URL=https://jago-wedding.up.railway.app
 NEXT_PUBLIC_PUBLIC_INVITATION_DOMAIN=jago-wedding.up.railway.app
 ```
