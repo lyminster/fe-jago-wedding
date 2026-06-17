@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --background: #f8f7f3;
+  --foreground: #26312d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--background);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.wedding-serif {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.wedding-script {
+  font-family: "Brush Script MT", "Segoe Script", "Lucida Handwriting", cursive;
+}
+
+.wedding-editorial {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.wedding-modern {
+  font-family: "Trebuchet MS", Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+@keyframes jw-float-petal {
+  0% {
+    opacity: 0.3;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translate3d(10px, -18px, 0) rotate(16deg);
+  }
+  100% {
+    opacity: 0.3;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+@keyframes jw-soft-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes jw-line-sweep {
+  0% {
+    transform: translateX(-45%);
+  }
+  100% {
+    transform: translateX(45%);
+  }
+}
+
+@keyframes jw-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.jw-rise {
+  animation: jw-rise 700ms ease-out both;
+}
+
+.jw-scroll-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 620ms ease,
+    transform 620ms ease;
+}
+
+.jw-scroll-reveal-left {
+  transform: translateX(-22px);
+}
+
+.jw-scroll-reveal-right {
+  transform: translateX(22px);
+}
+
+.jw-scroll-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jw-scroll-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+.jw-petal {
+  animation: jw-float-petal 5s ease-in-out infinite;
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.9), transparent 32%),
+    radial-gradient(circle at 60% 60%, rgba(211, 96, 133, 0.86), rgba(211, 96, 133, 0.18) 62%, transparent 70%);
+}
+
+.jw-gold-orb {
+  animation: jw-soft-pulse 3.8s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(228, 190, 119, 0.82), rgba(228, 190, 119, 0));
+}
+
+.jw-line-sweep {
+  animation: jw-line-sweep 7s ease-in-out infinite alternate;
+}
+
+.jw-grain {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
