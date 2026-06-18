@@ -226,6 +226,7 @@ export function LiveInvitationPreview({
   const scrollerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLElement>(null);
   const musicIframeRef = useRef<HTMLIFrameElement>(null);
+  const musicRetryTimerRef = useRef<number | null>(null);
   const [comments, setComments] = useState<GuestComment[]>(initialComments);
   const [commentName, setCommentName] = useState("");
   const [commentMessage, setCommentMessage] = useState("");
@@ -316,6 +317,14 @@ export function LiveInvitationPreview({
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (musicRetryTimerRef.current) {
+        window.clearTimeout(musicRetryTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!guestComments) return;
     setComments(guestComments);
   }, [guestComments]);
@@ -395,7 +404,7 @@ export function LiveInvitationPreview({
   }, [activeTemplate, gallerySignature, isStandalone]);
 
   function handleEnter() {
-    startMusic();
+    startMusic({ retryAfterMs: 1000 });
 
     if (!contentRef.current) return;
 
@@ -499,7 +508,7 @@ export function LiveInvitationPreview({
     );
   }
 
-  function startMusic() {
+  function startMusic({ retryAfterMs = 0 } = {}) {
     if (youtubeAutoplaySrc === "about:blank") {
       setIsMusicPlaying(false);
       return;
@@ -507,6 +516,18 @@ export function LiveInvitationPreview({
 
     sendYoutubeCommand("playVideo");
     setIsMusicPlaying(true);
+
+    if (musicRetryTimerRef.current) {
+      window.clearTimeout(musicRetryTimerRef.current);
+      musicRetryTimerRef.current = null;
+    }
+
+    if (retryAfterMs > 0) {
+      musicRetryTimerRef.current = window.setTimeout(() => {
+        sendYoutubeCommand("playVideo");
+        musicRetryTimerRef.current = null;
+      }, retryAfterMs);
+    }
   }
 
   function handleMusicToggle() {
@@ -516,8 +537,7 @@ export function LiveInvitationPreview({
       return;
     }
 
-    sendYoutubeCommand("playVideo");
-    setIsMusicPlaying(true);
+    startMusic({ retryAfterMs: 1000 });
   }
 
   async function handleShare() {
@@ -551,7 +571,7 @@ export function LiveInvitationPreview({
         src={youtubeAutoplaySrc}
         allow="autoplay; encrypted-media; picture-in-picture"
         onLoad={() => {
-          window.setTimeout(startMusic, 600);
+          window.setTimeout(() => startMusic({ retryAfterMs: 1000 }), 1000);
         }}
       />
             {!isStandalone ? (

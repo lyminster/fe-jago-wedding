@@ -13,6 +13,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import { LandingSessionRedirect } from "@/components/landing-session-redirect";
 
 const features = [
   {
@@ -131,6 +132,7 @@ const heroStickers = [
 export default function LandingPage() {
   return (
     <main className="min-h-screen bg-[#fbfaf6] text-[#17211c]">
+      <LandingSessionRedirect />
       <section className="relative flex min-h-[94svh] items-stretch overflow-hidden bg-[#101713]">
         <Image
           src="/images/template-floral.png"
