@@ -227,6 +227,7 @@ export function LiveInvitationPreview({
   const contentRef = useRef<HTMLElement>(null);
   const musicIframeRef = useRef<HTMLIFrameElement>(null);
   const musicRetryTimerRef = useRef<number | null>(null);
+  const wantsMusicPlayingRef = useRef(false);
   const [comments, setComments] = useState<GuestComment[]>(initialComments);
   const [commentName, setCommentName] = useState("");
   const [commentMessage, setCommentMessage] = useState("");
@@ -242,7 +243,8 @@ export function LiveInvitationPreview({
   const [commentStatusMessage, setCommentStatusMessage] = useState("");
   const [isSubmittingRsvp, setIsSubmittingRsvp] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  const [isMusicPlaying, setIsMusicPlaying] = useState(true);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [shouldLoadMusic, setShouldLoadMusic] = useState(false);
   const [mapEmbedSrc, setMapEmbedSrc] = useState(() =>
     getGoogleMapEmbedSrc(data.mapLink),
   );
@@ -326,31 +328,46 @@ export function LiveInvitationPreview({
     [],
   );
 
+  const clearMusicRetry = useCallback(() => {
+    if (musicRetryTimerRef.current) {
+      window.clearTimeout(musicRetryTimerRef.current);
+      musicRetryTimerRef.current = null;
+    }
+  }, []);
+
+  const pauseMusic = useCallback(() => {
+    wantsMusicPlayingRef.current = false;
+    clearMusicRetry();
+    sendYoutubeCommand("pauseVideo");
+    setIsMusicPlaying(false);
+  }, [clearMusicRetry, sendYoutubeCommand]);
+
   const startMusic = useCallback(
     ({ retryAfterMs = 0 } = {}) => {
       if (youtubeAutoplaySrc === "about:blank") {
-        setIsMusicPlaying(false);
+        pauseMusic();
         return;
       }
 
+      wantsMusicPlayingRef.current = true;
+      setShouldLoadMusic(true);
       sendYoutubeCommand("playVideo");
       sendYoutubeCommand("unMute");
       setIsMusicPlaying(true);
 
-      if (musicRetryTimerRef.current) {
-        window.clearTimeout(musicRetryTimerRef.current);
-        musicRetryTimerRef.current = null;
-      }
+      clearMusicRetry();
 
       if (retryAfterMs > 0) {
         musicRetryTimerRef.current = window.setTimeout(() => {
+          if (!wantsMusicPlayingRef.current) return;
+
           sendYoutubeCommand("playVideo");
           sendYoutubeCommand("unMute");
           musicRetryTimerRef.current = null;
         }, retryAfterMs);
       }
     },
-    [sendYoutubeCommand, youtubeAutoplaySrc],
+    [clearMusicRetry, pauseMusic, sendYoutubeCommand, youtubeAutoplaySrc],
   );
 
   useEffect(() => {
@@ -359,28 +376,16 @@ export function LiveInvitationPreview({
 
   useEffect(() => {
     return () => {
-      if (musicRetryTimerRef.current) {
-        window.clearTimeout(musicRetryTimerRef.current);
-      }
+      clearMusicRetry();
     };
-  }, []);
+  }, [clearMusicRetry]);
 
   useEffect(() => {
-    function unlockMusicFromGesture() {
-      startMusic({ retryAfterMs: 1000 });
-    }
-
-    window.addEventListener("pointerdown", unlockMusicFromGesture, {
-      once: true,
-      passive: true,
-    });
-    window.addEventListener("keydown", unlockMusicFromGesture, { once: true });
-
-    return () => {
-      window.removeEventListener("pointerdown", unlockMusicFromGesture);
-      window.removeEventListener("keydown", unlockMusicFromGesture);
-    };
-  }, [startMusic, youtubeAutoplaySrc]);
+    wantsMusicPlayingRef.current = false;
+    clearMusicRetry();
+    setIsMusicPlaying(false);
+    setShouldLoadMusic(false);
+  }, [clearMusicRetry, youtubeAutoplaySrc]);
 
   useEffect(() => {
     if (!guestComments) return;
@@ -557,8 +562,7 @@ export function LiveInvitationPreview({
 
   function handleMusicToggle() {
     if (isMusicPlaying) {
-      sendYoutubeCommand("pauseVideo");
-      setIsMusicPlaying(false);
+      pauseMusic();
       return;
     }
 
@@ -589,16 +593,20 @@ export function LiveInvitationPreview({
       }`}
     >
             <TemplateEffect type={style.effect} />
-      <iframe
-        ref={musicIframeRef}
-        className="pointer-events-none absolute h-px w-px opacity-0"
-        title="YouTube music player"
-        src={youtubeAutoplaySrc}
-        allow="autoplay; encrypted-media; picture-in-picture"
-        onLoad={() => {
-          window.setTimeout(() => startMusic({ retryAfterMs: 1000 }), 1000);
-        }}
-      />
+      {shouldLoadMusic ? (
+        <iframe
+          ref={musicIframeRef}
+          className="pointer-events-none absolute h-px w-px opacity-0"
+          title="YouTube music player"
+          src={youtubeAutoplaySrc}
+          allow="autoplay; encrypted-media; picture-in-picture"
+          onLoad={() => {
+            if (wantsMusicPlayingRef.current) {
+              startMusic({ retryAfterMs: 1000 });
+            }
+          }}
+        />
+      ) : null}
             {!isStandalone ? (
               <div className="pointer-events-none absolute left-1/2 top-2 z-50 h-5 w-24 -translate-x-1/2 rounded-full bg-[#252b27]" />
             ) : null}
