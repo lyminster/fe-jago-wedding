@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   Banknote,
   Building2,
@@ -312,6 +312,47 @@ export function LiveInvitationPreview({
   const canShareInvitation = isInvitationPubliclyActive(invitationMeta);
   const shareDisabledReason = getShareDisabledReason(invitationMeta);
 
+  const sendYoutubeCommand = useCallback(
+    (command: "pauseVideo" | "playVideo" | "unMute") => {
+      musicIframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({
+          event: "command",
+          func: command,
+          args: [],
+        }),
+        "https://www.youtube.com",
+      );
+    },
+    [],
+  );
+
+  const startMusic = useCallback(
+    ({ retryAfterMs = 0 } = {}) => {
+      if (youtubeAutoplaySrc === "about:blank") {
+        setIsMusicPlaying(false);
+        return;
+      }
+
+      sendYoutubeCommand("playVideo");
+      sendYoutubeCommand("unMute");
+      setIsMusicPlaying(true);
+
+      if (musicRetryTimerRef.current) {
+        window.clearTimeout(musicRetryTimerRef.current);
+        musicRetryTimerRef.current = null;
+      }
+
+      if (retryAfterMs > 0) {
+        musicRetryTimerRef.current = window.setTimeout(() => {
+          sendYoutubeCommand("playVideo");
+          sendYoutubeCommand("unMute");
+          musicRetryTimerRef.current = null;
+        }, retryAfterMs);
+      }
+    },
+    [sendYoutubeCommand, youtubeAutoplaySrc],
+  );
+
   useEffect(() => {
     setYoutubeOrigin(window.location.origin);
   }, []);
@@ -323,6 +364,23 @@ export function LiveInvitationPreview({
       }
     };
   }, []);
+
+  useEffect(() => {
+    function unlockMusicFromGesture() {
+      startMusic({ retryAfterMs: 1000 });
+    }
+
+    window.addEventListener("pointerdown", unlockMusicFromGesture, {
+      once: true,
+      passive: true,
+    });
+    window.addEventListener("keydown", unlockMusicFromGesture, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", unlockMusicFromGesture);
+      window.removeEventListener("keydown", unlockMusicFromGesture);
+    };
+  }, [startMusic, youtubeAutoplaySrc]);
 
   useEffect(() => {
     if (!guestComments) return;
@@ -497,39 +555,6 @@ export function LiveInvitationPreview({
     }
   }
 
-  function sendYoutubeCommand(command: "pauseVideo" | "playVideo") {
-    musicIframeRef.current?.contentWindow?.postMessage(
-      JSON.stringify({
-        event: "command",
-        func: command,
-        args: [],
-      }),
-      "https://www.youtube.com",
-    );
-  }
-
-  function startMusic({ retryAfterMs = 0 } = {}) {
-    if (youtubeAutoplaySrc === "about:blank") {
-      setIsMusicPlaying(false);
-      return;
-    }
-
-    sendYoutubeCommand("playVideo");
-    setIsMusicPlaying(true);
-
-    if (musicRetryTimerRef.current) {
-      window.clearTimeout(musicRetryTimerRef.current);
-      musicRetryTimerRef.current = null;
-    }
-
-    if (retryAfterMs > 0) {
-      musicRetryTimerRef.current = window.setTimeout(() => {
-        sendYoutubeCommand("playVideo");
-        musicRetryTimerRef.current = null;
-      }, retryAfterMs);
-    }
-  }
-
   function handleMusicToggle() {
     if (isMusicPlaying) {
       sendYoutubeCommand("pauseVideo");
@@ -566,7 +591,7 @@ export function LiveInvitationPreview({
             <TemplateEffect type={style.effect} />
       <iframe
         ref={musicIframeRef}
-        className="pointer-events-none absolute h-0 w-0 opacity-0"
+        className="pointer-events-none absolute h-px w-px opacity-0"
         title="YouTube music player"
         src={youtubeAutoplaySrc}
         allow="autoplay; encrypted-media; picture-in-picture"
