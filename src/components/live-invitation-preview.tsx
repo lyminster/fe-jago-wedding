@@ -7,7 +7,6 @@ import {
   Banknote,
   Building2,
   CalendarDays,
-  ChevronDown,
   Heart,
   MailOpen,
   MapPin,
@@ -58,7 +57,6 @@ const templateStyles: Record<
     effect: "classic" | "minimalist" | "floral" | "modern";
     frameBg: string;
     galleryShape: string;
-    heroButton: string;
     heroContent: string;
     heroDateClass: string;
     heroEyebrowClass: string;
@@ -80,7 +78,6 @@ const templateStyles: Record<
     effect: "classic",
     frameBg: "bg-[#ece8dd]",
     galleryShape: "rounded-lg",
-    heroButton: "rounded-lg bg-white text-ink",
     heroContent: "pb-8 text-center",
     heroDateClass: "mt-3 text-sm text-white/85",
     heroEyebrowClass: "text-xs font-semibold uppercase tracking-[0.12em]",
@@ -101,7 +98,6 @@ const templateStyles: Record<
     effect: "minimalist",
     frameBg: "bg-[#edf1ee]",
     galleryShape: "rounded-none",
-    heroButton: "rounded-none bg-white text-[#324139]",
     heroContent: "pb-10 text-left",
     heroDateClass: "mt-5 border-l border-white/60 pl-3 text-xs font-semibold uppercase tracking-[0.18em] text-white/88",
     heroEyebrowClass: "text-[11px] font-semibold uppercase tracking-[0.28em]",
@@ -122,7 +118,6 @@ const templateStyles: Record<
     effect: "floral",
     frameBg: "bg-[#f7e7ec]",
     galleryShape: "rounded-[24px]",
-    heroButton: "rounded-full bg-[#fff6f8] text-[#7b243e]",
     heroContent: "pb-10 text-center",
     heroDateClass: "wedding-editorial mt-4 text-sm italic text-white/90",
     heroEyebrowClass: "text-[11px] font-semibold uppercase tracking-[0.18em]",
@@ -143,7 +138,6 @@ const templateStyles: Record<
     effect: "modern",
     frameBg: "bg-[#ded8ca]",
     galleryShape: "rounded-sm",
-    heroButton: "rounded-sm bg-[#d6a348] text-[#151916]",
     heroContent: "pb-8 text-left",
     heroDateClass: "mt-5 inline-block border border-white/35 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-white",
     heroEyebrowClass: "text-[10px] font-bold uppercase tracking-[0.32em]",
@@ -228,7 +222,6 @@ export function LiveInvitationPreview({
   const isStandalone = variant === "standalone";
   const countdown = useCountdown(getScheduleTimestamp(data.schedule.reception));
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLElement>(null);
   const musicIframeRef = useRef<HTMLIFrameElement>(null);
   const musicRetryTimerRef = useRef<number | null>(null);
   const wantsMusicPlayingRef = useRef(false);
@@ -264,26 +257,34 @@ export function LiveInvitationPreview({
   const orderedCoupleCards = isBrideFirst
     ? [
         {
+          father: data.bride.father,
+          mother: data.bride.mother,
           name: data.bride.name,
-          parents: `Putri Bapak ${data.bride.father} & Ibu ${data.bride.mother}`,
           photo: data.bride.photo,
+          relation: "Putri dari",
         },
         {
+          father: data.groom.father,
+          mother: data.groom.mother,
           name: data.groom.name,
-          parents: `Putra Bapak ${data.groom.father} & Ibu ${data.groom.mother}`,
           photo: data.groom.photo,
+          relation: "Putra dari",
         },
       ]
     : [
         {
+          father: data.groom.father,
+          mother: data.groom.mother,
           name: data.groom.name,
-          parents: `Putra Bapak ${data.groom.father} & Ibu ${data.groom.mother}`,
           photo: data.groom.photo,
+          relation: "Putra dari",
         },
         {
+          father: data.bride.father,
+          mother: data.bride.mother,
           name: data.bride.name,
-          parents: `Putri Bapak ${data.bride.father} & Ibu ${data.bride.mother}`,
           photo: data.bride.photo,
+          relation: "Putri dari",
         },
       ];
   const orderedAccounts = isBrideFirst
@@ -484,21 +485,6 @@ export function LiveInvitationPreview({
     return () => observer.disconnect();
   }, [activeTemplate, gallerySignature, isStandalone]);
 
-  function handleEnter() {
-    if (!contentRef.current) return;
-
-    if (isStandalone) {
-      contentRef.current.scrollIntoView({ behavior: "smooth" });
-      return;
-    }
-
-    if (!scrollerRef.current) return;
-    scrollerRef.current.scrollTo({
-      top: contentRef.current.offsetTop,
-      behavior: "smooth",
-    });
-  }
-
   function handleOpenInvitation() {
     startMusic({ retryAfterMs: 1000 });
     setIsInvitationOpened(true);
@@ -634,6 +620,7 @@ export function LiveInvitationPreview({
                 isStandalone={isStandalone}
                 onOpen={handleOpenInvitation}
                 recipientName={recipientName}
+                template={activeTemplate}
               />
             ) : null}
             {!isStandalone ? (
@@ -703,18 +690,10 @@ export function LiveInvitationPreview({
                   <p className={style.heroDateClass}>
                     {formatEventDate(data.schedule.reception)}
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleEnter}
-                    className={`mt-6 inline-flex h-11 w-full items-center justify-center gap-2 px-4 text-sm font-semibold shadow-lg ${style.heroButton}`}
-                  >
-                    Masuk
-                    <ChevronDown size={16} aria-hidden="true" />
-                  </button>
                 </div>
               </section>
 
-              <section ref={contentRef} className="space-y-4 px-5 py-5">
+              <section className="space-y-4 px-5 py-5">
                 <div className="jw-scroll-reveal">
                   <TemplateDivider type={style.effect} />
                 </div>
@@ -749,10 +728,12 @@ export function LiveInvitationPreview({
                   <div className="mt-4 grid gap-3">
                     {orderedCoupleCards.map((person) => (
                       <CoupleCard
-                        key={person.parents}
+                        key={person.name}
+                        father={person.father}
+                        mother={person.mother}
                         name={person.name}
-                        parents={person.parents}
                         photo={person.photo}
+                        relation={person.relation}
                       />
                     ))}
                   </div>
@@ -1064,16 +1045,20 @@ function CountdownItem({ label, value }: { label: string; value: number }) {
 }
 
 function CoupleCard({
+  father,
+  mother,
   name,
-  parents,
   photo,
+  relation,
 }: {
+  father: string;
+  mother: string;
   name: string;
-  parents: string;
   photo: PhotoAsset | null;
+  relation: string;
 }) {
   return (
-    <div className="rounded-lg bg-white px-3 py-3">
+    <div className="rounded-lg bg-white px-4 py-5">
       {photo ? (
         <div className="relative mx-auto mb-3 h-20 w-20 overflow-hidden rounded-full bg-[#f6f4ee]">
           <PreviewImage
@@ -1085,7 +1070,19 @@ function CoupleCard({
         </div>
       ) : null}
       <p className="wedding-serif text-2xl text-ink">{name}</p>
-      <p className="mt-1 text-xs text-[#758178]">{parents}</p>
+      <div className="mx-auto mt-3 flex max-w-[270px] items-center gap-3" aria-hidden="true">
+        <span className="h-px flex-1 bg-[#ded3bd]" />
+        <span className="h-1.5 w-1.5 rotate-45 bg-[#bd8b32]" />
+        <span className="h-px flex-1 bg-[#ded3bd]" />
+      </div>
+      <p className="mt-3 font-serif text-sm italic text-[#7a6c5c]">
+        {relation}
+      </p>
+      <p className="mt-2 font-serif text-base leading-7 text-[#403a34]">
+        Bapak <span className="font-semibold">{father || "-"}</span>
+        <span className="block text-xs italic text-[#938575]">dan</span>
+        Ibu <span className="font-semibold">{mother || "-"}</span>
+      </p>
     </div>
   );
 }
@@ -1122,66 +1119,192 @@ function InvitationEnvelope({
   isStandalone,
   onOpen,
   recipientName,
+  template,
 }: {
   coupleName: string;
   isStandalone: boolean;
   onOpen: () => void;
   recipientName: string;
+  template: InvitationTemplate;
 }) {
+  const envelopeTheme = {
+    classic: {
+      background: "bg-[#17211c] text-white",
+      button: "bg-[#d9be81] text-[#17211c] hover:bg-[#ead49e] focus-visible:outline-[#d9be81]",
+      couple: "wedding-editorial text-white",
+      description: "text-white/60",
+      label: "text-[#d9be81]",
+      recipient: "font-serif text-white",
+      salutation: "text-white/55",
+    },
+    minimalist: {
+      background: "bg-[#f4f6f2] text-[#29352f]",
+      button: "border border-[#29352f] bg-[#29352f] text-white hover:bg-[#415149] focus-visible:outline-[#29352f]",
+      couple: "wedding-modern font-light uppercase text-[#29352f]",
+      description: "text-[#68756d]",
+      label: "text-[#68786f]",
+      recipient: "wedding-modern uppercase text-[#29352f]",
+      salutation: "text-[#7a857e]",
+    },
+    floral: {
+      background: "bg-[#fff1f5] text-[#6f263d]",
+      button: "bg-[#b95573] text-white hover:bg-[#9f3f5d] focus-visible:outline-[#b95573]",
+      couple: "wedding-script text-[#a54161]",
+      description: "text-[#8e6170]",
+      label: "text-[#b95573]",
+      recipient: "font-serif text-[#6f263d]",
+      salutation: "text-[#a77a89]",
+    },
+    modern: {
+      background: "bg-[#101412] text-white",
+      button: "border border-[#d6a348] bg-[#d6a348] text-[#101412] hover:bg-[#e3b963] focus-visible:outline-[#d6a348]",
+      couple: "wedding-modern font-black uppercase text-white",
+      description: "text-white/55",
+      label: "text-[#d6a348]",
+      recipient: "wedding-modern font-bold uppercase text-white",
+      salutation: "text-white/45",
+    },
+  }[template];
+
   return (
     <div
       className={`${
         isStandalone ? "fixed min-h-[100svh]" : "absolute min-h-full"
-      } inset-0 z-[70] flex items-center justify-center overflow-hidden bg-[#17211c] px-6 py-10 text-center text-white`}
+      } ${envelopeTheme.background} inset-0 z-[70] flex items-center justify-center overflow-hidden px-6 py-10 text-center`}
       role="dialog"
       aria-label="Pembuka undangan"
       aria-modal="true"
     >
-      <div className="pointer-events-none absolute inset-0 opacity-70">
-        <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full border border-[#d9be81]/25" />
-        <div className="absolute -right-20 bottom-10 h-60 w-60 rounded-full border border-[#d9be81]/20" />
-        <div className="absolute inset-x-10 top-1/2 h-px bg-gradient-to-r from-transparent via-[#d9be81]/25 to-transparent" />
-      </div>
+      <EnvelopeBackdrop template={template} />
 
       <div className="relative z-10 flex w-full max-w-md flex-col items-center">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#d9be81]">
+        <p className={`text-[11px] font-semibold uppercase tracking-[0.3em] ${envelopeTheme.label}`}>
           Wedding invitation
         </p>
-        <p className="wedding-editorial mt-3 text-3xl leading-tight text-white">
+        <p className={`mt-3 text-3xl leading-tight ${envelopeTheme.couple}`}>
           {coupleName}
         </p>
 
-        <div className="relative mt-10 w-full max-w-[360px] pt-[66%] drop-shadow-[0_24px_38px_rgba(0,0,0,0.32)]">
-          <div className="absolute inset-0 overflow-hidden rounded-lg bg-[#e8dcc3]">
-            <div className="absolute inset-x-0 top-0 h-[58%] bg-[#f5ecd9] [clip-path:polygon(0_0,100%_0,50%_100%)]" />
-            <div className="absolute inset-y-0 left-0 w-[55%] bg-[#d9c9aa] [clip-path:polygon(0_0,100%_50%,0_100%)]" />
-            <div className="absolute inset-y-0 right-0 w-[55%] bg-[#dfcfb2] [clip-path:polygon(100%_0,0_50%,100%_100%)]" />
-            <div className="absolute inset-x-0 bottom-0 h-[58%] bg-[#eee2ca] [clip-path:polygon(0_100%,50%_0,100%_100%)]" />
-          </div>
+        <EnvelopeArtwork template={template} />
 
-          <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-[#f2dfb4] bg-[#9d3f45] text-[#f8e8c5] shadow-lg">
-            <Heart size={24} fill="currentColor" aria-hidden="true" />
-          </div>
-        </div>
-
-        <p className="mt-9 text-xs uppercase tracking-[0.22em] text-white/55">
+        <p className={`mt-9 text-xs uppercase tracking-[0.22em] ${envelopeTheme.salutation}`}>
           Kepada Yth.
         </p>
-        <p className="mt-2 text-xl font-semibold text-white">
+        <p className={`mt-2 text-xl font-semibold ${envelopeTheme.recipient}`}>
           {recipientName.trim() || "Tamu Undangan"}
         </p>
-        <p className="mt-2 max-w-xs text-sm leading-6 text-white/60">
+        <p className={`mt-2 max-w-xs text-sm leading-6 ${envelopeTheme.description}`}>
           Dengan hormat, kami mengundang Anda untuk merayakan hari bahagia kami.
         </p>
 
         <button
           type="button"
           onClick={onOpen}
-          className="mt-8 inline-flex h-12 w-full max-w-[300px] items-center justify-center gap-2 rounded-lg bg-[#d9be81] px-5 text-sm font-bold text-[#17211c] shadow-[0_14px_30px_rgba(0,0,0,0.25)] transition hover:bg-[#ead49e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d9be81]"
+          className={`mt-8 inline-flex h-12 w-full max-w-[300px] items-center justify-center gap-2 rounded-lg px-5 text-sm font-bold shadow-[0_14px_30px_rgba(0,0,0,0.2)] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 ${envelopeTheme.button}`}
         >
           <MailOpen size={18} aria-hidden="true" />
           Buka undangan
         </button>
+      </div>
+    </div>
+  );
+}
+
+function EnvelopeBackdrop({ template }: { template: InvitationTemplate }) {
+  if (template === "minimalist") {
+    return (
+      <div className="pointer-events-none absolute inset-0">
+        <span className="absolute inset-x-8 top-8 h-px bg-[#29352f]/20" />
+        <span className="absolute bottom-8 left-1/2 h-16 w-px bg-[#29352f]/15" />
+      </div>
+    );
+  }
+
+  if (template === "floral") {
+    return (
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <span className="jw-petal absolute -left-6 top-16 h-24 w-16 rounded-full opacity-50" />
+        <span className="jw-petal absolute right-4 top-32 h-14 w-10 rounded-full opacity-40 [animation-delay:1s]" />
+        <span className="jw-petal absolute bottom-20 left-12 h-12 w-8 rounded-full opacity-35 [animation-delay:2s]" />
+      </div>
+    );
+  }
+
+  if (template === "modern") {
+    return (
+      <div className="pointer-events-none absolute inset-0">
+        <div className="jw-grain absolute inset-0 opacity-40" />
+        <span className="absolute left-6 top-6 h-24 w-px bg-[#d6a348]/55" />
+        <span className="absolute left-6 top-6 h-px w-24 bg-[#d6a348]/55" />
+        <span className="absolute bottom-6 right-6 h-24 w-px bg-[#d6a348]/35" />
+        <span className="absolute bottom-6 right-6 h-px w-24 bg-[#d6a348]/35" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="pointer-events-none absolute inset-0 opacity-70">
+      <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full border border-[#d9be81]/25" />
+      <div className="absolute -right-20 bottom-10 h-60 w-60 rounded-full border border-[#d9be81]/20" />
+      <div className="absolute inset-x-10 top-1/2 h-px bg-gradient-to-r from-transparent via-[#d9be81]/25 to-transparent" />
+    </div>
+  );
+}
+
+function EnvelopeArtwork({ template }: { template: InvitationTemplate }) {
+  if (template === "minimalist") {
+    return (
+      <div className="relative mt-10 w-full max-w-[350px] pt-[62%] drop-shadow-[0_20px_30px_rgba(41,53,47,0.14)]">
+        <div className="absolute inset-0 border border-[#8e9a92] bg-white">
+          <div className="absolute inset-x-0 top-0 h-[58%] border-b border-[#aab4ad] bg-[#fafbf9] [clip-path:polygon(0_0,100%_0,50%_100%)]" />
+          <span className="wedding-modern absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xl font-light uppercase tracking-[0.18em] text-[#445149]">
+            RSVP
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (template === "floral") {
+    return (
+      <div className="relative mt-9 w-full max-w-[350px] pt-[68%] drop-shadow-[0_22px_34px_rgba(111,38,61,0.18)]">
+        <div className="absolute inset-0 overflow-hidden rounded-[28px] border border-[#eeb8c9] bg-[#f8dce5]">
+          <div className="absolute inset-x-0 top-0 h-[60%] bg-[#fff7f9] [clip-path:polygon(0_0,100%_0,50%_100%)]" />
+          <div className="absolute inset-x-0 bottom-0 h-[60%] bg-[#f4cbd8] [clip-path:polygon(0_100%,50%_0,100%_100%)]" />
+          <span className="absolute left-5 top-5 h-10 w-7 rotate-[-28deg] rounded-full bg-[#d87e9a]/45" />
+          <span className="absolute right-6 top-7 h-8 w-6 rotate-[32deg] rounded-full bg-[#c95f80]/35" />
+        </div>
+        <div className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/70 bg-[#b95573] text-white shadow-md">
+          <Heart size={21} fill="currentColor" aria-hidden="true" />
+        </div>
+      </div>
+    );
+  }
+
+  if (template === "modern") {
+    return (
+      <div className="relative mt-10 w-full max-w-[350px] pt-[64%] drop-shadow-[0_26px_34px_rgba(0,0,0,0.4)]">
+        <div className="absolute inset-0 overflow-hidden border border-[#d6a348] bg-[#171d1a]">
+          <div className="absolute inset-x-0 top-0 h-[58%] border-b border-[#d6a348]/70 bg-[#202823] [clip-path:polygon(0_0,100%_0,50%_100%)]" />
+          <div className="absolute inset-x-0 bottom-0 h-[56%] bg-[#0e1210] [clip-path:polygon(0_100%,50%_0,100%_100%)]" />
+          <span className="wedding-modern absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 border border-[#d6a348] bg-[#101412] px-4 py-3 text-xs font-black uppercase tracking-[0.28em] text-[#d6a348]">
+            Open
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative mt-10 w-full max-w-[360px] pt-[66%] drop-shadow-[0_24px_38px_rgba(0,0,0,0.32)]">
+      <div className="absolute inset-0 overflow-hidden rounded-lg bg-[#e8dcc3]">
+        <div className="absolute inset-x-0 top-0 h-[58%] bg-[#f5ecd9] [clip-path:polygon(0_0,100%_0,50%_100%)]" />
+        <div className="absolute inset-y-0 left-0 w-[55%] bg-[#d9c9aa] [clip-path:polygon(0_0,100%_50%,0_100%)]" />
+        <div className="absolute inset-y-0 right-0 w-[55%] bg-[#dfcfb2] [clip-path:polygon(100%_0,0_50%,100%_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-[58%] bg-[#eee2ca] [clip-path:polygon(0_100%,50%_0,100%_100%)]" />
+      </div>
+      <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-[#f2dfb4] bg-[#9d3f45] text-[#f8e8c5] shadow-lg">
+        <Heart size={24} fill="currentColor" aria-hidden="true" />
       </div>
     </div>
   );
