@@ -64,10 +64,14 @@ async function fetchPublicData(slug: string) {
 
 export default async function PublicInvitationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ to?: string | string[] }>;
 }) {
   const { slug } = await params;
+  const { to } = await searchParams;
+  const recipientName = Array.isArray(to) ? to[0] : to;
   const publicData = await fetchPublicData(slug);
 
   if (!publicData) {
@@ -79,6 +83,7 @@ export default async function PublicInvitationPage({
       initialComments={publicData.comments}
       initialData={publicData.data}
       initialTemplate={publicData.template}
+      recipientName={recipientName}
       slug={slug}
     />
   );

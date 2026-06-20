@@ -8,6 +8,8 @@ import {
   Building2,
   CalendarDays,
   ChevronDown,
+  Heart,
+  MailOpen,
   MapPin,
   Pause,
   Play,
@@ -206,6 +208,7 @@ export function LiveInvitationPreview({
   guestComments,
   onGuestCommentSubmit,
   onRsvpSubmit,
+  recipientName = "Tamu Undangan",
   template,
   variant = "dashboard",
 }: {
@@ -215,6 +218,7 @@ export function LiveInvitationPreview({
     name: string;
   }) => Promise<GuestComment>;
   onRsvpSubmit?: (payload: RsvpPayload) => Promise<void>;
+  recipientName?: string;
   template?: InvitationTemplate;
   variant?: "dashboard" | "standalone";
 }) {
@@ -244,7 +248,10 @@ export function LiveInvitationPreview({
   const [isSubmittingRsvp, setIsSubmittingRsvp] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
-  const [shouldLoadMusic, setShouldLoadMusic] = useState(false);
+  const [isInvitationOpened, setIsInvitationOpened] = useState(false);
+  const [shouldLoadMusic, setShouldLoadMusic] = useState(() =>
+    Boolean(getYoutubeVideoId(data.music.youtubeUrl)),
+  );
   const [mapEmbedSrc, setMapEmbedSrc] = useState(() =>
     getGoogleMapEmbedSrc(data.mapLink),
   );
@@ -384,8 +391,19 @@ export function LiveInvitationPreview({
     wantsMusicPlayingRef.current = false;
     clearMusicRetry();
     setIsMusicPlaying(false);
-    setShouldLoadMusic(false);
+    setShouldLoadMusic(youtubeAutoplaySrc !== "about:blank");
   }, [clearMusicRetry, youtubeAutoplaySrc]);
+
+  useEffect(() => {
+    if (!isStandalone || isInvitationOpened) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isInvitationOpened, isStandalone]);
 
   useEffect(() => {
     if (!guestComments) return;
@@ -467,8 +485,6 @@ export function LiveInvitationPreview({
   }, [activeTemplate, gallerySignature, isStandalone]);
 
   function handleEnter() {
-    startMusic({ retryAfterMs: 1000 });
-
     if (!contentRef.current) return;
 
     if (isStandalone) {
@@ -481,6 +497,11 @@ export function LiveInvitationPreview({
       top: contentRef.current.offsetTop,
       behavior: "smooth",
     });
+  }
+
+  function handleOpenInvitation() {
+    startMusic({ retryAfterMs: 1000 });
+    setIsInvitationOpened(true);
   }
 
   async function handleRsvpSubmit(event: FormEvent<HTMLFormElement>) {
@@ -592,7 +613,7 @@ export function LiveInvitationPreview({
           : "aspect-[1320/2868] max-w-[360px] rounded-[32px] border-[8px] border-[#252b27] shadow-2xl"
       }`}
     >
-            <TemplateEffect type={style.effect} />
+      <TemplateEffect type={style.effect} />
       {shouldLoadMusic ? (
         <iframe
           ref={musicIframeRef}
@@ -607,6 +628,14 @@ export function LiveInvitationPreview({
           }}
         />
       ) : null}
+            {!isInvitationOpened ? (
+              <InvitationEnvelope
+                coupleName={`${firstFirstName} & ${secondFirstName}`}
+                isStandalone={isStandalone}
+                onOpen={handleOpenInvitation}
+                recipientName={recipientName}
+              />
+            ) : null}
             {!isStandalone ? (
               <div className="pointer-events-none absolute left-1/2 top-2 z-50 h-5 w-24 -translate-x-1/2 rounded-full bg-[#252b27]" />
             ) : null}
@@ -1088,6 +1117,76 @@ function AccountCard({
   );
 }
 
+function InvitationEnvelope({
+  coupleName,
+  isStandalone,
+  onOpen,
+  recipientName,
+}: {
+  coupleName: string;
+  isStandalone: boolean;
+  onOpen: () => void;
+  recipientName: string;
+}) {
+  return (
+    <div
+      className={`${
+        isStandalone ? "fixed min-h-[100svh]" : "absolute min-h-full"
+      } inset-0 z-[70] flex items-center justify-center overflow-hidden bg-[#17211c] px-6 py-10 text-center text-white`}
+      role="dialog"
+      aria-label="Pembuka undangan"
+      aria-modal="true"
+    >
+      <div className="pointer-events-none absolute inset-0 opacity-70">
+        <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full border border-[#d9be81]/25" />
+        <div className="absolute -right-20 bottom-10 h-60 w-60 rounded-full border border-[#d9be81]/20" />
+        <div className="absolute inset-x-10 top-1/2 h-px bg-gradient-to-r from-transparent via-[#d9be81]/25 to-transparent" />
+      </div>
+
+      <div className="relative z-10 flex w-full max-w-md flex-col items-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#d9be81]">
+          Wedding invitation
+        </p>
+        <p className="wedding-editorial mt-3 text-3xl leading-tight text-white">
+          {coupleName}
+        </p>
+
+        <div className="relative mt-10 w-full max-w-[360px] pt-[66%] drop-shadow-[0_24px_38px_rgba(0,0,0,0.32)]">
+          <div className="absolute inset-0 overflow-hidden rounded-lg bg-[#e8dcc3]">
+            <div className="absolute inset-x-0 top-0 h-[58%] bg-[#f5ecd9] [clip-path:polygon(0_0,100%_0,50%_100%)]" />
+            <div className="absolute inset-y-0 left-0 w-[55%] bg-[#d9c9aa] [clip-path:polygon(0_0,100%_50%,0_100%)]" />
+            <div className="absolute inset-y-0 right-0 w-[55%] bg-[#dfcfb2] [clip-path:polygon(100%_0,0_50%,100%_100%)]" />
+            <div className="absolute inset-x-0 bottom-0 h-[58%] bg-[#eee2ca] [clip-path:polygon(0_100%,50%_0,100%_100%)]" />
+          </div>
+
+          <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-[#f2dfb4] bg-[#9d3f45] text-[#f8e8c5] shadow-lg">
+            <Heart size={24} fill="currentColor" aria-hidden="true" />
+          </div>
+        </div>
+
+        <p className="mt-9 text-xs uppercase tracking-[0.22em] text-white/55">
+          Kepada Yth.
+        </p>
+        <p className="mt-2 text-xl font-semibold text-white">
+          {recipientName.trim() || "Tamu Undangan"}
+        </p>
+        <p className="mt-2 max-w-xs text-sm leading-6 text-white/60">
+          Dengan hormat, kami mengundang Anda untuk merayakan hari bahagia kami.
+        </p>
+
+        <button
+          type="button"
+          onClick={onOpen}
+          className="mt-8 inline-flex h-12 w-full max-w-[300px] items-center justify-center gap-2 rounded-lg bg-[#d9be81] px-5 text-sm font-bold text-[#17211c] shadow-[0_14px_30px_rgba(0,0,0,0.25)] transition hover:bg-[#ead49e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d9be81]"
+        >
+          <MailOpen size={18} aria-hidden="true" />
+          Buka undangan
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function TemplateEffect({
   type,
 }: {
@@ -1352,7 +1451,7 @@ function getYoutubeAutoplaySrc(url: string, origin = "") {
   if (!videoId) return "about:blank";
 
   const params = new URLSearchParams({
-    autoplay: "1",
+    autoplay: "0",
     controls: "0",
     enablejsapi: "1",
     loop: "1",

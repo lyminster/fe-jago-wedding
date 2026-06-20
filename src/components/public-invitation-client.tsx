@@ -37,11 +37,13 @@ export function PublicInvitationClient({
   initialComments,
   initialData,
   initialTemplate,
+  recipientName,
   slug,
 }: {
   initialComments?: GuestComment[];
   initialData?: WeddingData;
   initialTemplate?: InvitationTemplate;
+  recipientName?: string;
   slug: string;
 }) {
   const setWeddingData = useWeddingDataStore((state) => state.setWeddingData);
@@ -141,6 +143,7 @@ export function PublicInvitationClient({
       guestComments={comments}
       onGuestCommentSubmit={handleCommentSubmit}
       onRsvpSubmit={handleRsvpSubmit}
+      recipientName={recipientName}
       template={template}
       variant="standalone"
     />
