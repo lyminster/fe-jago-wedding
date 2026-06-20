@@ -95,7 +95,7 @@ const workflow = [
   },
   {
     icon: HeartHandshake,
-    text: "Bagikan subdomain undangan, lalu pantau RSVP tamu dari dashboard.",
+    text: "Bagikan link undangan, lalu pantau RSVP tamu dari dashboard.",
     title: "Bagikan link",
   },
 ];
@@ -274,7 +274,7 @@ export default function LandingPage() {
                   Dapatkan URL gratis undangan kalian
                 </p>
                 <p className="mt-2 text-sm font-semibold">
-                  alya-dimas.jago-wedding.up.railway.app
+                  jago-wedding.up.railway.app/undangan/alya-dimas
                 </p>
               </div>
               <div className="absolute right-0 top-28 rounded-full border border-white/18 bg-white px-4 py-3 text-sm font-bold text-[#17211c] shadow-2xl rotate-6">

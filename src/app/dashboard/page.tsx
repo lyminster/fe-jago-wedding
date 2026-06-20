@@ -490,13 +490,13 @@ export default function Home() {
                 <div>
                   <h2 className="text-lg font-semibold">Alamat undangan</h2>
                   <p className="mt-1 text-sm text-[#6e7a72]">
-                    User hanya mengisi subdomain. Domain utama terkunci dan tidak
+                    User hanya mengisi alamat unik. URL utama terkunci dan tidak
                     bisa diedit.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-md bg-[#eef3eb] px-3 py-2 text-xs font-semibold text-[#47604b]">
-                    Subdomain aktif
+                    URL undangan
                   </span>
                   <button
                     type="button"
@@ -516,26 +516,26 @@ export default function Home() {
               </div>
               <label className="mt-5 block">
                 <span className="mb-2 block text-sm font-medium text-[#59645d]">
-                  Subdomain
+                  Alamat unik
                 </span>
-                <span className="flex min-h-12 min-w-0 overflow-hidden rounded-lg border border-[#d9cdb9] bg-white">
+                <span className="flex min-h-12 min-w-0 flex-col overflow-hidden rounded-lg border border-[#d9cdb9] bg-white sm:flex-row">
+                  <input
+                    className="h-12 w-full shrink-0 border-b border-[#e4dfd4] bg-[#f2f0ea] px-3 text-xs font-semibold text-[#757d76] sm:w-[265px] sm:border-b-0 sm:border-r sm:text-sm"
+                    defaultValue="jago-wedding.up.railway.app/undangan/"
+                    aria-label="URL utama terkunci"
+                    disabled
+                  />
                   <input
                     className={`min-w-0 flex-1 bg-white px-3 text-sm font-semibold text-ink outline-none ${
                       subdomainError ? "text-[#a64f3f]" : ""
                     }`}
                     value={draftData.slug}
                     onChange={(event) => updateDraftSlug(event.target.value)}
-                    aria-label="Subdomain"
+                    aria-label="Alamat unik undangan"
                     aria-invalid={Boolean(subdomainError)}
                     aria-describedby={
                       subdomainError ? "subdomain-error" : undefined
                     }
-                  />
-                  <input
-                    className="w-[215px] shrink-0 border-l border-[#e4dfd4] bg-[#f2f0ea] px-3 text-sm font-semibold text-[#757d76]"
-                    defaultValue=".jago-wedding.up.railway.app"
-                    aria-label="Domain utama terkunci"
-                    disabled
                   />
                 </span>
                 {subdomainError ? (
@@ -1215,11 +1215,11 @@ function getPublicInvitationUrl(slug: string) {
   const normalizedSlug = slug.trim();
   if (!normalizedSlug) return "";
 
-  const publicDomain =
-    process.env.NEXT_PUBLIC_PUBLIC_INVITATION_DOMAIN ??
-    "jago-wedding.up.railway.app";
+  const appUrl = (
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://jago-wedding.up.railway.app"
+  ).replace(/\/$/, "");
 
-  return `https://${normalizedSlug}.${publicDomain}`;
+  return `${appUrl}/undangan/${encodeURIComponent(normalizedSlug)}`;
 }
 
 function getShareDisabledReason(

@@ -1006,7 +1006,7 @@ export function LiveInvitationPreview({
           <div>
             <h2 className="text-lg font-semibold">Live preview</h2>
             <p className="mt-1 text-sm text-[#6e7a72]">
-              {data.slug}.jago-wedding.up.railway.app
+              jago-wedding.up.railway.app/undangan/{data.slug}
             </p>
           </div>
           <button
@@ -1470,11 +1470,11 @@ function getPublicInvitationUrl(slug: string) {
   const normalizedSlug = slug.trim();
   if (!normalizedSlug) return "";
 
-  const publicDomain =
-    process.env.NEXT_PUBLIC_PUBLIC_INVITATION_DOMAIN ??
-    "jago-wedding.up.railway.app";
+  const appUrl = (
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://jago-wedding.up.railway.app"
+  ).replace(/\/$/, "");
 
-  return `https://${normalizedSlug}.${publicDomain}`;
+  return `${appUrl}/undangan/${encodeURIComponent(normalizedSlug)}`;
 }
 
 function isInvitationPubliclyActive(invitationMeta: InvitationMeta | null) {
