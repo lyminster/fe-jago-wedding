@@ -1,16 +1,27 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
   Banknote,
   BookOpenText,
   CalendarDays,
   Check,
+  Clock,
   CreditCard,
+  Eye,
+  EyeOff,
+  Heart,
+  ImageIcon,
   Loader2,
+  Plus,
   Save,
   Share2,
   ShieldCheck,
+  Trash2,
+  UploadCloud,
   UserRound,
   X,
 } from "lucide-react";
@@ -27,6 +38,7 @@ import {
   markPaymentPaid,
   saveWeddingDataToBackend,
   syncPaymentOrder,
+  uploadInvitationPhoto,
   type BackendOrder,
   type BackendRSVP,
 } from "@/lib/backend-api";
@@ -35,8 +47,10 @@ import type {
   BankAccountKey,
   CoupleOrder,
   InvitationMeta,
+  LoveStoryItem,
   PersonKey,
   PhotoAsset,
+  RundownItem,
   WeddingData,
 } from "@/components/wedding-data-store";
 import { useWeddingDataStore } from "@/components/wedding-data-store";
@@ -54,6 +68,7 @@ export default function Home() {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [deletedMediaUrls, setDeletedMediaUrls] = useState<string[]>([]);
   const [subdomainError, setSubdomainError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,6 +85,7 @@ export default function Home() {
         setInvitationMeta(invitation);
         setWeddingData(invitation.data);
         setDraftData(invitation.data);
+        setDeletedMediaUrls([]);
 
         try {
           const backendRsvps = await loadRsvpsForInvitation(invitation);
@@ -141,9 +157,10 @@ export default function Home() {
 
   function updateDraftSlug(slug: string) {
     setSubdomainError(null);
+    const normalizedSlug = slug.toLowerCase().replace(/[^a-z0-9&-]/g, "");
     setDraftData((current) => ({
       ...current,
-      slug,
+      slug: normalizedSlug,
     }));
   }
 
@@ -238,6 +255,169 @@ export default function Home() {
     }));
   }
 
+  function markDeletedMediaUrl(url?: string) {
+    if (!url || !url.includes("/uploads/")) return;
+
+    setDeletedMediaUrls((current) =>
+      current.includes(url) ? current : [...current, url],
+    );
+  }
+
+  function updateLoveStoryVisibility(isVisible: boolean) {
+    setDraftData((current) => ({
+      ...current,
+      loveStory: {
+        ...current.loveStory,
+        isVisible,
+      },
+    }));
+  }
+
+  function addLoveStoryItem() {
+    setDraftData((current) => ({
+      ...current,
+      loveStory: {
+        ...current.loveStory,
+        isVisible: true,
+        items: [
+          ...current.loveStory.items,
+          {
+            date: "",
+            description: "",
+            id: createLocalId(),
+            photo: null,
+            title: "",
+          },
+        ],
+      },
+    }));
+  }
+
+  function updateLoveStoryItem(
+    id: string,
+    patch: Partial<Omit<LoveStoryItem, "id">>,
+  ) {
+    setDraftData((current) => ({
+      ...current,
+      loveStory: {
+        ...current.loveStory,
+        items: current.loveStory.items.map((item) =>
+          item.id === id ? { ...item, ...patch } : item,
+        ),
+      },
+    }));
+  }
+
+  function setLoveStoryPhoto(id: string, asset: PhotoAsset) {
+    const currentItem = draftData.loveStory.items.find((item) => item.id === id);
+    if (currentItem?.photo?.url !== asset.url) {
+      markDeletedMediaUrl(currentItem?.photo?.url);
+    }
+
+    setDraftData((current) => ({
+      ...current,
+      loveStory: {
+        ...current.loveStory,
+        items: current.loveStory.items.map((item) =>
+          item.id === id ? { ...item, photo: asset } : item,
+        ),
+      },
+    }));
+  }
+
+  function removeLoveStoryPhoto(item: LoveStoryItem) {
+    markDeletedMediaUrl(item.photo?.url);
+    updateLoveStoryItem(item.id, { photo: null });
+  }
+
+  function removeLoveStoryItem(item: LoveStoryItem) {
+    markDeletedMediaUrl(item.photo?.url);
+    setDraftData((current) => ({
+      ...current,
+      loveStory: {
+        ...current.loveStory,
+        items: current.loveStory.items.filter((currentItem) => currentItem.id !== item.id),
+      },
+    }));
+  }
+
+  function moveLoveStoryItem(id: string, direction: -1 | 1) {
+    setDraftData((current) => ({
+      ...current,
+      loveStory: {
+        ...current.loveStory,
+        items: moveItemById(current.loveStory.items, id, direction),
+      },
+    }));
+  }
+
+  function updateRundownVisibility(isVisible: boolean) {
+    setDraftData((current) => ({
+      ...current,
+      eventRundown: {
+        ...current.eventRundown,
+        isVisible,
+      },
+    }));
+  }
+
+  function addRundownItem() {
+    setDraftData((current) => ({
+      ...current,
+      eventRundown: {
+        ...current.eventRundown,
+        isVisible: true,
+        items: [
+          ...current.eventRundown.items,
+          {
+            date: "",
+            description: "",
+            endTime: "",
+            id: createLocalId(),
+            location: "",
+            startTime: "",
+            title: "",
+          },
+        ],
+      },
+    }));
+  }
+
+  function updateRundownItem(
+    id: string,
+    patch: Partial<Omit<RundownItem, "id">>,
+  ) {
+    setDraftData((current) => ({
+      ...current,
+      eventRundown: {
+        ...current.eventRundown,
+        items: current.eventRundown.items.map((item) =>
+          item.id === id ? { ...item, ...patch } : item,
+        ),
+      },
+    }));
+  }
+
+  function removeRundownItem(id: string) {
+    setDraftData((current) => ({
+      ...current,
+      eventRundown: {
+        ...current.eventRundown,
+        items: current.eventRundown.items.filter((item) => item.id !== id),
+      },
+    }));
+  }
+
+  function moveRundownItem(id: string, direction: -1 | 1) {
+    setDraftData((current) => ({
+      ...current,
+      eventRundown: {
+        ...current.eventRundown,
+        items: moveItemById(current.eventRundown.items, id, direction),
+      },
+    }));
+  }
+
   function updateDraftBankAccount(
     account: BankAccountKey,
     patch: Partial<WeddingData["bankAccounts"]["bride"]>,
@@ -260,10 +440,14 @@ export default function Home() {
     setIsSaving(true);
 
     try {
-      const invitation = await saveWeddingDataToBackend(draftData);
+      const invitation = await saveWeddingDataToBackend(
+        draftData,
+        deletedMediaUrls,
+      );
       setInvitationMeta(invitation);
       setWeddingData(invitation.data);
       setDraftData(invitation.data);
+      setDeletedMediaUrls([]);
       setSubdomainError(null);
       setSaveDialog({ title: "Berhasil tersimpan", variant: "success" });
     } catch (error) {
@@ -271,7 +455,8 @@ export default function Home() {
       if (
         error instanceof BackendApiError &&
         (error.status === 400 || error.status === 409) &&
-        message.toLowerCase().includes("subdomain")
+        (message.toLowerCase().includes("subdomain") ||
+          message.toLowerCase().includes("alamat unik"))
       ) {
         setSubdomainError(message);
         return;
@@ -518,15 +703,14 @@ export default function Home() {
                 <span className="mb-2 block text-sm font-medium text-[#59645d]">
                   Alamat unik
                 </span>
-                <span className="flex min-h-12 min-w-0 flex-col overflow-hidden rounded-lg border border-[#d9cdb9] bg-white sm:flex-row">
+                <span className="flex min-h-12 min-w-0 flex-col overflow-hidden rounded-lg border border-[#d9cdb9] bg-white md:flex-row">
+                  <span className="flex h-12 min-w-0 shrink-0 border-b border-[#e4dfd4] bg-[#f2f0ea] px-3 text-xs font-semibold text-[#757d76] md:w-[340px] md:border-b-0 md:border-r lg:w-[365px]">
+                    <span className="self-center whitespace-nowrap">
+                      jago-wedding.up.railway.app/undangan/
+                    </span>
+                  </span>
                   <input
-                    className="h-12 w-full shrink-0 border-b border-[#e4dfd4] bg-[#f2f0ea] px-3 text-xs font-semibold text-[#757d76] sm:w-[265px] sm:border-b-0 sm:border-r sm:text-sm"
-                    defaultValue="jago-wedding.up.railway.app/undangan/"
-                    aria-label="URL utama terkunci"
-                    disabled
-                  />
-                  <input
-                    className={`min-w-0 flex-1 bg-white px-3 text-sm font-semibold text-ink outline-none ${
+                    className={`h-12 min-w-[180px] flex-1 bg-white px-3 text-sm font-semibold text-ink outline-none ${
                       subdomainError ? "text-[#a64f3f]" : ""
                     }`}
                     value={draftData.slug}
@@ -537,6 +721,9 @@ export default function Home() {
                       subdomainError ? "subdomain-error" : undefined
                     }
                   />
+                </span>
+                <span className="mt-2 block text-xs leading-5 text-[#758178]">
+                  Gunakan huruf kecil, angka, dash (-), atau & tanpa spasi.
                 </span>
                 {subdomainError ? (
                   <span
@@ -604,6 +791,28 @@ export default function Home() {
                     onChange={(value) => updateDraftText("storyText", value)}
                   />
                 </div>
+
+                <LoveStoryEditor
+                  items={draftData.loveStory.items}
+                  isVisible={draftData.loveStory.isVisible}
+                  onAdd={addLoveStoryItem}
+                  onMove={moveLoveStoryItem}
+                  onPhotoChange={setLoveStoryPhoto}
+                  onPhotoRemove={removeLoveStoryPhoto}
+                  onRemove={removeLoveStoryItem}
+                  onToggle={updateLoveStoryVisibility}
+                  onUpdate={updateLoveStoryItem}
+                />
+
+                <RundownEditor
+                  items={draftData.eventRundown.items}
+                  isVisible={draftData.eventRundown.isVisible}
+                  onAdd={addRundownItem}
+                  onMove={moveRundownItem}
+                  onRemove={removeRundownItem}
+                  onToggle={updateRundownVisibility}
+                  onUpdate={updateRundownItem}
+                />
 
                 <div className="grid gap-4 xl:grid-cols-2">
                   <DateTimeField
@@ -1096,7 +1305,399 @@ function CoupleDetailCard({
   );
 }
 
-function TextAreaField({
+function LoveStoryEditor({
+  isVisible,
+  items,
+  onAdd,
+  onMove,
+  onPhotoChange,
+  onPhotoRemove,
+  onRemove,
+  onToggle,
+  onUpdate,
+}: {
+  isVisible: boolean;
+  items: LoveStoryItem[];
+  onAdd: () => void;
+  onMove: (id: string, direction: -1 | 1) => void;
+  onPhotoChange: (id: string, asset: PhotoAsset) => void;
+  onPhotoRemove: (item: LoveStoryItem) => void;
+  onRemove: (item: LoveStoryItem) => void;
+  onToggle: (isVisible: boolean) => void;
+  onUpdate: (id: string, patch: Partial<Omit<LoveStoryItem, "id">>) => void;
+}) {
+  return (
+    <section className="rounded-lg border border-[#e8e3d8] bg-[#fbfaf7] p-4">
+      <SectionToggleHeader
+        description="Tambahkan momen penting seperti awal kenal, pacaran, lamaran, sampai hari pernikahan."
+        icon={Heart}
+        isVisible={isVisible}
+        onAdd={onAdd}
+        onToggle={onToggle}
+        title="Perjalanan cinta"
+      />
+
+      {isVisible && items.length === 0 ? (
+        <EmptyEditorHint text="Section ini aktif, tapi belum ada momen yang ditambahkan." />
+      ) : null}
+
+      <div className="mt-4 space-y-4">
+        {items.map((item, index) => (
+          <div
+            key={item.id}
+            className="rounded-lg border border-[#e4dfd4] bg-white p-3"
+          >
+            <ItemToolbar
+              index={index}
+              itemCount={items.length}
+              label={`Momen ${index + 1}`}
+              onMoveDown={() => onMove(item.id, 1)}
+              onMoveUp={() => onMove(item.id, -1)}
+              onRemove={() => onRemove(item)}
+            />
+
+            <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px]">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <FormField
+                    label="Judul momen"
+                    value={item.title}
+                    onChange={(value) => onUpdate(item.id, { title: value })}
+                  />
+                </div>
+                <DateInputField
+                  label="Tanggal"
+                  value={item.date}
+                  onChange={(value) => onUpdate(item.id, { date: value })}
+                />
+                <div className="sm:col-span-2">
+                  <TextAreaField
+                    label="Cerita singkat"
+                    minHeightClassName="min-h-28"
+                    value={item.description}
+                    onChange={(value) =>
+                      onUpdate(item.id, { description: value })
+                    }
+                  />
+                </div>
+              </div>
+              <LoveStoryPhotoField
+                item={item}
+                onChange={(asset) => onPhotoChange(item.id, asset)}
+                onRemove={() => onPhotoRemove(item)}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RundownEditor({
+  isVisible,
+  items,
+  onAdd,
+  onMove,
+  onRemove,
+  onToggle,
+  onUpdate,
+}: {
+  isVisible: boolean;
+  items: RundownItem[];
+  onAdd: () => void;
+  onMove: (id: string, direction: -1 | 1) => void;
+  onRemove: (id: string) => void;
+  onToggle: (isVisible: boolean) => void;
+  onUpdate: (id: string, patch: Partial<Omit<RundownItem, "id">>) => void;
+}) {
+  return (
+    <section className="rounded-lg border border-[#e8e3d8] bg-[#fbfaf7] p-4">
+      <SectionToggleHeader
+        description="Isi bebas untuk semua format acara, misalnya akad, pemberkatan, tea pai, resepsi, atau jamuan makan malam."
+        icon={Clock}
+        isVisible={isVisible}
+        onAdd={onAdd}
+        onToggle={onToggle}
+        title="Rundown acara"
+      />
+
+      {isVisible && items.length === 0 ? (
+        <EmptyEditorHint text="Section ini aktif, tapi belum ada agenda acara." />
+      ) : null}
+
+      <div className="mt-4 space-y-4">
+        {items.map((item, index) => (
+          <div
+            key={item.id}
+            className="rounded-lg border border-[#e4dfd4] bg-white p-3"
+          >
+            <ItemToolbar
+              index={index}
+              itemCount={items.length}
+              label={`Agenda ${index + 1}`}
+              onMoveDown={() => onMove(item.id, 1)}
+              onMoveUp={() => onMove(item.id, -1)}
+              onRemove={() => onRemove(item.id)}
+            />
+
+            <div className="mt-3 grid gap-3 lg:grid-cols-2">
+              <div className="lg:col-span-2">
+                <FormField
+                  label="Nama acara"
+                  value={item.title}
+                  onChange={(value) => onUpdate(item.id, { title: value })}
+                />
+              </div>
+              <DateInputField
+                label="Tanggal"
+                value={item.date}
+                onChange={(value) => onUpdate(item.id, { date: value })}
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <TimeInputField
+                  label="Jam mulai"
+                  value={item.startTime}
+                  onChange={(value) => onUpdate(item.id, { startTime: value })}
+                />
+                <TimeInputField
+                  label="Jam selesai"
+                  value={item.endTime}
+                  onChange={(value) => onUpdate(item.id, { endTime: value })}
+                />
+              </div>
+              <div className="lg:col-span-2">
+                <FormField
+                  label="Lokasi"
+                  value={item.location}
+                  onChange={(value) => onUpdate(item.id, { location: value })}
+                />
+              </div>
+              <div className="lg:col-span-2">
+                <TextAreaField
+                  label="Catatan"
+                  minHeightClassName="min-h-24"
+                  value={item.description}
+                  onChange={(value) => onUpdate(item.id, { description: value })}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SectionToggleHeader({
+  description,
+  icon: Icon,
+  isVisible,
+  onAdd,
+  onToggle,
+  title,
+}: {
+  description: string;
+  icon: typeof Heart;
+  isVisible: boolean;
+  onAdd: () => void;
+  onToggle: (isVisible: boolean) => void;
+  title: string;
+}) {
+  return (
+    <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+      <div className="min-w-0">
+        <h3 className="flex items-center gap-2 text-base font-semibold text-ink">
+          <Icon size={18} className="text-[#bd8b32]" aria-hidden="true" />
+          {title}
+        </h3>
+        <p className="mt-1 text-sm leading-6 text-[#6e7a72]">{description}</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onToggle(!isVisible)}
+          className={`inline-flex h-9 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold ${
+            isVisible
+              ? "border-[#d4e6d5] bg-[#eef8ef] text-[#3d7246]"
+              : "border-[#e4dfd4] bg-white text-[#59645d]"
+          }`}
+        >
+          {isVisible ? (
+            <Eye size={16} aria-hidden="true" />
+          ) : (
+            <EyeOff size={16} aria-hidden="true" />
+          )}
+          {isVisible ? "Ditampilkan" : "Disembunyikan"}
+        </button>
+        <button
+          type="button"
+          onClick={onAdd}
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-ink px-3 text-sm font-semibold text-white hover:bg-[#1c2421]"
+        >
+          <Plus size={16} aria-hidden="true" />
+          Tambah item
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ItemToolbar({
+  index,
+  itemCount,
+  label,
+  onMoveDown,
+  onMoveUp,
+  onRemove,
+}: {
+  index: number;
+  itemCount: number;
+  label: string;
+  onMoveDown: () => void;
+  onMoveUp: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <p className="text-sm font-semibold text-ink">{label}</p>
+      <div className="flex items-center gap-2">
+        <IconButton
+          disabled={index === 0}
+          label="Naikkan item"
+          onClick={onMoveUp}
+        >
+          <ArrowUp size={15} aria-hidden="true" />
+        </IconButton>
+        <IconButton
+          disabled={index === itemCount - 1}
+          label="Turunkan item"
+          onClick={onMoveDown}
+        >
+          <ArrowDown size={15} aria-hidden="true" />
+        </IconButton>
+        <IconButton label="Hapus item" onClick={onRemove} tone="danger">
+          <Trash2 size={15} aria-hidden="true" />
+        </IconButton>
+      </div>
+    </div>
+  );
+}
+
+function IconButton({
+  children,
+  disabled = false,
+  label,
+  onClick,
+  tone = "neutral",
+}: {
+  children: ReactNode;
+  disabled?: boolean;
+  label: string;
+  onClick: () => void;
+  tone?: "danger" | "neutral";
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex h-8 w-8 items-center justify-center rounded-lg border text-sm disabled:cursor-not-allowed disabled:opacity-40 ${
+        tone === "danger"
+          ? "border-[#efd2cc] text-[#a64f3f] hover:bg-[#fff5f2]"
+          : "border-[#e4dfd4] text-[#59645d] hover:bg-[#f6f4ee]"
+      }`}
+      aria-label={label}
+      title={label}
+    >
+      {children}
+    </button>
+  );
+}
+
+function LoveStoryPhotoField({
+  item,
+  onChange,
+  onRemove,
+}: {
+  item: LoveStoryItem;
+  onChange: (asset: PhotoAsset) => void;
+  onRemove: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  async function uploadPhoto(file?: File) {
+    if (!file || !file.type.startsWith("image/")) return;
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const asset = await uploadInvitationPhoto(file);
+      onChange(asset);
+    } catch (error) {
+      setUploadError(getBackendErrorMessage(error));
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-dashed border-[#d6cab7] bg-[#fbfaf7] p-3">
+      <span className="mb-2 flex items-center gap-2 text-sm font-medium text-[#59645d]">
+        <ImageIcon size={16} className="text-moss" aria-hidden="true" />
+        Foto momen
+      </span>
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={isUploading}
+        className="flex min-h-40 w-full items-center justify-center overflow-hidden rounded-lg border border-[#e4dfd4] bg-white text-sm font-semibold text-[#758178] hover:bg-[#f6f4ee] disabled:cursor-wait"
+      >
+        {item.photo ? (
+          // Uploaded image URLs are served by the Go backend.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={item.photo.url}
+            alt={item.photo.name}
+            className="h-full max-h-52 w-full object-cover"
+          />
+        ) : (
+          <span className="flex flex-col items-center gap-2 px-3">
+            <UploadCloud size={22} className="text-[#bd8b32]" aria-hidden="true" />
+            {isUploading ? "Upload..." : "Pilih foto"}
+          </span>
+        )}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="sr-only"
+        onChange={(event) => void uploadPhoto(event.target.files?.[0])}
+        aria-label="Upload foto perjalanan cinta"
+      />
+      {item.photo ? (
+        <button
+          type="button"
+          onClick={onRemove}
+          className="mt-2 inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-[#efd2cc] px-3 text-xs font-semibold text-[#a64f3f] hover:bg-[#fff5f2]"
+        >
+          <Trash2 size={14} aria-hidden="true" />
+          Hapus foto
+        </button>
+      ) : null}
+      {uploadError ? (
+        <p className="mt-2 text-xs font-semibold text-[#a64f3f]">
+          {uploadError}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function TimeInputField({
   label,
   onChange,
   value,
@@ -1107,17 +1708,101 @@ function TextAreaField({
 }) {
   return (
     <label>
-      <span className="mb-2 flex items-center gap-2 text-sm font-medium text-[#59645d]">
-        <BookOpenText size={16} className="text-moss" aria-hidden="true" />
+      <span className="mb-2 block text-sm font-medium text-[#59645d]">
         {label}
       </span>
-      <textarea
-        className="block min-h-32 w-full resize-none rounded-lg border border-[#e4dfd4] bg-[#fbfaf7] px-3 py-3 text-sm font-semibold text-ink outline-none focus:border-[#bd8b32]"
+      <input
+        type="time"
+        className="block min-h-11 w-full rounded-lg border border-[#e4dfd4] bg-[#fbfaf7] px-3 py-3 text-sm font-semibold text-ink outline-none focus:border-[#bd8b32]"
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
     </label>
   );
+}
+
+function DateInputField({
+  label,
+  onChange,
+  value,
+}: {
+  label: string;
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  return (
+    <label>
+      <span className="mb-2 block text-sm font-medium text-[#59645d]">
+        {label}
+      </span>
+      <input
+        type="date"
+        className="block min-h-11 w-full rounded-lg border border-[#e4dfd4] bg-[#fbfaf7] px-3 py-3 text-sm font-semibold text-ink outline-none focus:border-[#bd8b32]"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  );
+}
+
+function EmptyEditorHint({ text }: { text: string }) {
+  return (
+    <div className="mt-4 rounded-lg border border-[#f0dfbd] bg-[#fff9ec] px-3 py-3 text-sm font-semibold text-[#8a6227]">
+      {text}
+    </div>
+  );
+}
+
+function TextAreaField({
+  label,
+  minHeightClassName = "min-h-32",
+  onChange,
+  value,
+}: {
+  label: string;
+  minHeightClassName?: string;
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  return (
+    <label>
+      <span className="mb-2 flex items-center gap-2 text-sm font-medium text-[#59645d]">
+        <BookOpenText size={16} className="text-moss" aria-hidden="true" />
+        {label}
+      </span>
+      <textarea
+        className={`block w-full resize-none rounded-lg border border-[#e4dfd4] bg-[#fbfaf7] px-3 py-3 text-sm font-semibold text-ink outline-none focus:border-[#bd8b32] ${minHeightClassName}`}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  );
+}
+
+function createLocalId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function moveItemById<T extends { id: string }>(
+  items: T[],
+  id: string,
+  direction: -1 | 1,
+) {
+  const currentIndex = items.findIndex((item) => item.id === id);
+  const nextIndex = currentIndex + direction;
+  if (currentIndex < 0 || nextIndex < 0 || nextIndex >= items.length) {
+    return items;
+  }
+
+  const nextItems = [...items];
+  const [item] = nextItems.splice(currentIndex, 1);
+  nextItems.splice(nextIndex, 0, item);
+
+  return nextItems;
 }
 
 function getFirstName(name: string) {

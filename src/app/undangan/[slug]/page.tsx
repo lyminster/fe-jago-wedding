@@ -2,8 +2,9 @@ import { PublicInvitationClient } from "@/components/public-invitation-client";
 import type { GuestComment } from "@/components/live-invitation-preview";
 import type {
   InvitationTemplate,
-  WeddingData,
 } from "@/components/wedding-data-store";
+import { fetchPublicInvitation } from "@/lib/public-invitation-server";
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -13,10 +14,6 @@ const API_BASE_URL =
 
 type ApiEnvelope<T> = {
   data: T;
-};
-
-type PublicInvitation = {
-  data: WeddingData;
 };
 
 type PublicGuestMessage = {
@@ -36,29 +33,82 @@ function mapGuestMessage(message: PublicGuestMessage): GuestComment {
 }
 
 async function fetchPublicData(slug: string) {
-  const [invitationResponse, messagesResponse] = await Promise.all([
-    fetch(`${API_BASE_URL}/api/public/invitations/${encodeURIComponent(slug)}`, {
-      cache: "no-store",
-    }),
+  const [data, messagesResponse] = await Promise.all([
+    fetchPublicInvitation(slug),
     fetch(
       `${API_BASE_URL}/api/public/invitations/${encodeURIComponent(slug)}/messages`,
       { cache: "no-store" },
     ),
   ]);
 
-  if (!invitationResponse.ok || !messagesResponse.ok) {
+  if (!data || !messagesResponse.ok) {
     return null;
   }
 
-  const invitationEnvelope =
-    (await invitationResponse.json()) as ApiEnvelope<PublicInvitation>;
   const messagesEnvelope =
     (await messagesResponse.json()) as ApiEnvelope<PublicGuestMessage[]>;
 
   return {
     comments: (messagesEnvelope.data ?? []).map(mapGuestMessage),
-    data: invitationEnvelope.data.data,
-    template: invitationEnvelope.data.data.template.saved as InvitationTemplate,
+    data,
+    template: data.template.saved as InvitationTemplate,
+  };
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const data = await fetchPublicInvitation(slug);
+
+  if (!data) {
+    return {
+      title: "Undangan tidak ditemukan",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const orderedNames =
+    data.coupleOrder === "groom-first"
+      ? [data.groom.name, data.bride.name]
+      : [data.bride.name, data.groom.name];
+  const [firstName, secondName] = orderedNames.map(
+    (name, index) => name.trim() || (index === 0 ? "Mempelai" : "Pasangan"),
+  );
+  const coupleName = `${firstName} & ${secondName}`;
+  const title = `Undangan Pernikahan ${coupleName}`;
+  const description = `Dengan penuh sukacita, ${coupleName} mengundang Anda untuk hadir dan memberikan doa restu pada hari pernikahan mereka.`;
+  const path = `/undangan/${encodeURIComponent(slug)}`;
+  const imageUrl = `${path}/opengraph-image`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: path },
+    openGraph: {
+      type: "website",
+      locale: "id_ID",
+      siteName: "Jago Wedding Online",
+      url: path,
+      title,
+      description,
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: `Undangan pernikahan ${coupleName}`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [imageUrl],
+    },
   };
 }
 

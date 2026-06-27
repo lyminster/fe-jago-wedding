@@ -31,12 +31,38 @@ type BankAccountData = {
   number: string;
 };
 
+export type LoveStoryItem = {
+  date: string;
+  description: string;
+  id: string;
+  photo: PhotoAsset | null;
+  title: string;
+};
+
+export type RundownItem = {
+  date: string;
+  description: string;
+  endTime: string;
+  id: string;
+  location: string;
+  startTime: string;
+  title: string;
+};
+
 export type WeddingData = {
   bankAccounts: Record<BankAccountKey, BankAccountData>;
   bride: PersonData;
   coupleOrder: CoupleOrder;
+  eventRundown: {
+    isVisible: boolean;
+    items: RundownItem[];
+  };
   groom: PersonData;
   heroLabel: string;
+  loveStory: {
+    isVisible: boolean;
+    items: LoveStoryItem[];
+  };
   mapLink: string;
   music: {
     youtubeUrl: string;
@@ -70,6 +96,9 @@ export type InvitationMeta = {
   updatedAt: string;
   userId: string;
 };
+
+const defaultYoutubeUrl =
+  "https://www.youtube.com/watch?v=QZng89VxKWg&list=RDQZng89VxKWg&start_radio=1";
 
 type WeddingDataStore = {
   addGalleryPhotos: (assets: PhotoAsset[]) => void;
@@ -131,10 +160,18 @@ const initialWeddingData: WeddingData = {
     name: "",
     photo: null,
   },
+  eventRundown: {
+    isVisible: false,
+    items: [],
+  },
   heroLabel: "",
+  loveStory: {
+    isVisible: false,
+    items: [],
+  },
   mapLink: "",
   music: {
-    youtubeUrl: "",
+    youtubeUrl: defaultYoutubeUrl,
   },
   photos: {
     cover: null,
@@ -212,7 +249,7 @@ export const useWeddingDataStore = create<WeddingDataStore>((set) => ({
     set({ invitationMeta });
   },
   setWeddingData(data) {
-    set({ data });
+    set({ data: normalizeWeddingData(data) });
   },
   setCoverPhoto(asset) {
     set((state) => ({
@@ -330,5 +367,60 @@ export function createPhotoAsset(file: File): PhotoAsset {
     id: randomId,
     name: file.name,
     url: URL.createObjectURL(file),
+  };
+}
+
+export function normalizeWeddingData(data: WeddingData): WeddingData {
+  return {
+    ...initialWeddingData,
+    ...data,
+    bankAccounts: {
+      ...initialWeddingData.bankAccounts,
+      ...data.bankAccounts,
+    },
+    bride: {
+      ...initialWeddingData.bride,
+      ...data.bride,
+    },
+    eventRundown: {
+      ...initialWeddingData.eventRundown,
+      ...data.eventRundown,
+      items: data.eventRundown?.items ?? [],
+    },
+    groom: {
+      ...initialWeddingData.groom,
+      ...data.groom,
+    },
+    loveStory: {
+      ...initialWeddingData.loveStory,
+      ...data.loveStory,
+      items: data.loveStory?.items ?? [],
+    },
+    music: {
+      ...initialWeddingData.music,
+      ...data.music,
+      youtubeUrl: data.music?.youtubeUrl?.trim() || defaultYoutubeUrl,
+    },
+    photos: {
+      ...initialWeddingData.photos,
+      ...data.photos,
+      gallery: data.photos?.gallery ?? [],
+    },
+    schedule: {
+      ...initialWeddingData.schedule,
+      ...data.schedule,
+      ceremony: {
+        ...initialWeddingData.schedule.ceremony,
+        ...data.schedule?.ceremony,
+      },
+      reception: {
+        ...initialWeddingData.schedule.reception,
+        ...data.schedule?.reception,
+      },
+    },
+    template: {
+      ...initialWeddingData.template,
+      ...data.template,
+    },
   };
 }

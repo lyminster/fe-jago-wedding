@@ -66,6 +66,29 @@ function createSampleWeddingData(template: InvitationTemplate): WeddingData {
       },
     },
     coupleOrder: "bride-first",
+    eventRundown: {
+      isVisible: true,
+      items: [
+        {
+          date: "2026-07-13",
+          description: "Momen sakral bersama keluarga inti.",
+          endTime: "10:00",
+          id: "sample-rundown-ceremony",
+          location: "Gedung Seremoni, Jakarta",
+          startTime: "09:00",
+          title: "Akad nikah",
+        },
+        {
+          date: "2026-07-13",
+          description: "Jamuan makan malam dan ramah tamah bersama tamu.",
+          endTime: "21:00",
+          id: "sample-rundown-dinner",
+          location: "Ballroom Utama",
+          startTime: "19:00",
+          title: "Resepsi dan makan malam",
+        },
+      ],
+    },
     groom: {
       father: "Bapak Surya",
       mother: "Ibu Melati",
@@ -77,6 +100,31 @@ function createSampleWeddingData(template: InvitationTemplate): WeddingData {
       },
     },
     heroLabel: "The Wedding Of",
+    loveStory: {
+      isVisible: true,
+      items: [
+        {
+          date: "2021-02-14",
+          description:
+            "Percakapan sederhana setelah dikenalkan sahabat menjadi awal cerita kami.",
+          id: "sample-love-first-meet",
+          photo: {
+            id: "sample-love-photo",
+            name: "Awal cerita",
+            url: "/images/template-floral.png",
+          },
+          title: "Awal bertemu",
+        },
+        {
+          date: "2025-12-20",
+          description:
+            "Di hadapan keluarga, kami memantapkan hati untuk melangkah bersama.",
+          id: "sample-love-proposal",
+          photo: null,
+          title: "Lamaran",
+        },
+      ],
+    },
     mapLink: "https://www.google.com/maps?q=Jakarta&output=embed",
     music: {
       youtubeUrl: sampleYoutubeUrl,

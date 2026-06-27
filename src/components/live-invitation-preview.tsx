@@ -7,6 +7,7 @@ import {
   Banknote,
   Building2,
   CalendarDays,
+  Clock,
   Heart,
   MailOpen,
   MapPin,
@@ -312,7 +313,19 @@ export function LiveInvitationPreview({
   const shareUrl = getPublicInvitationUrl(data.slug);
   const galleryPhotos =
     data.photos.gallery.length > 0 ? data.photos.gallery : fallbackGallery;
+  const visibleLoveStoryItems =
+    data.loveStory?.isVisible && (data.loveStory.items?.length ?? 0) > 0
+      ? data.loveStory.items
+      : [];
+  const visibleRundownItems =
+    data.eventRundown?.isVisible && (data.eventRundown.items?.length ?? 0) > 0
+      ? data.eventRundown.items
+      : [];
   const gallerySignature = galleryPhotos.map((photo) => photo.url).join("|");
+  const loveStorySignature = visibleLoveStoryItems
+    .map((item) => `${item.id}:${item.photo?.url ?? ""}`)
+    .join("|");
+  const rundownSignature = visibleRundownItems.map((item) => item.id).join("|");
   const heroImage = data.photos.cover?.url ?? style.heroImage;
   const [youtubeOrigin, setYoutubeOrigin] = useState("");
   const youtubeAutoplaySrc = getYoutubeAutoplaySrc(
@@ -483,7 +496,13 @@ export function LiveInvitationPreview({
     });
 
     return () => observer.disconnect();
-  }, [activeTemplate, gallerySignature, isStandalone]);
+  }, [
+    activeTemplate,
+    gallerySignature,
+    isStandalone,
+    loveStorySignature,
+    rundownSignature,
+  ]);
 
   function handleOpenInvitation() {
     startMusic({ retryAfterMs: 1000 });
@@ -788,6 +807,116 @@ export function LiveInvitationPreview({
                     {data.storyText}
                   </p>
                 </section>
+
+                {visibleLoveStoryItems.length > 0 ? (
+                  <section
+                    className={`overflow-hidden p-4 ${style.cardBg} ${style.cardShape}`}
+                  >
+                    <p className={`text-center ${style.sectionTitleClass} ${style.accentText}`}>
+                      Perjalanan cinta
+                    </p>
+                    <ol className="mt-5">
+                      {visibleLoveStoryItems.map((item, index) => (
+                        <li
+                          key={item.id}
+                          className="jw-scroll-reveal relative flex min-w-0 gap-3 pb-7 text-left last:pb-0"
+                        >
+                          {index < visibleLoveStoryItems.length - 1 ? (
+                            <span
+                              className="absolute bottom-0 left-5 top-10 w-px bg-[#dbc69d]"
+                              aria-hidden="true"
+                            />
+                          ) : null}
+                          <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#dfc999] bg-[#f8f2e6] text-[#bd8b32] shadow-[0_0_0_4px_rgba(255,255,255,0.55)]">
+                            <Heart
+                              size={16}
+                              fill="currentColor"
+                              aria-hidden="true"
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1 pt-0.5 [overflow-wrap:anywhere]">
+                            {item.date ? (
+                              <p className="max-w-full whitespace-normal text-[11px] font-semibold uppercase leading-5 tracking-[0.14em] text-[#bd8b32]">
+                                {formatSimpleDate(item.date)}
+                              </p>
+                            ) : null}
+                            <h4 className="mt-1 max-w-full whitespace-normal text-base font-semibold leading-6 text-[#2f3933]">
+                              {item.title || "Momen berharga"}
+                            </h4>
+                            {item.description ? (
+                              <p className="mt-2 max-w-full whitespace-pre-wrap text-sm leading-6 text-[#4d594f] [overflow-wrap:anywhere]">
+                                {item.description}
+                              </p>
+                            ) : null}
+                            {item.photo ? (
+                              <div
+                                className={`mt-3 w-full overflow-hidden bg-[#f6f4ee] ${style.galleryShape}`}
+                              >
+                                <NaturalPreviewImage
+                                  src={item.photo.url}
+                                  alt={item.photo.name || item.title}
+                                />
+                              </div>
+                            ) : null}
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                ) : null}
+
+                {visibleRundownItems.length > 0 ? (
+                  <section
+                    className={`overflow-hidden p-4 ${style.cardBg} ${style.cardShape}`}
+                  >
+                    <p className={`text-center ${style.sectionTitleClass} ${style.accentText}`}>
+                      Rundown acara
+                    </p>
+                    <ol className="mt-5">
+                      {visibleRundownItems.map((item, index) => (
+                        <li
+                          key={item.id}
+                          className="jw-scroll-reveal relative flex min-w-0 gap-3 pb-6 text-left last:pb-0"
+                        >
+                          {index < visibleRundownItems.length - 1 ? (
+                            <span
+                              className="absolute bottom-0 left-5 top-10 w-px bg-[#dbc69d]"
+                              aria-hidden="true"
+                            />
+                          ) : null}
+                          <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#dfc999] bg-[#f8f2e6] text-[#bd8b32] shadow-[0_0_0_4px_rgba(255,255,255,0.55)]">
+                            <Clock size={17} aria-hidden="true" />
+                          </div>
+                          <div className="min-w-0 flex-1 pt-0.5 [overflow-wrap:anywhere]">
+                            <p className="max-w-full whitespace-normal text-xs font-semibold leading-5 text-[#bd8b32]">
+                              {formatRundownTime(item)}
+                            </p>
+                            <h4 className="mt-1 max-w-full whitespace-normal text-sm font-semibold leading-5 text-[#2f3933]">
+                              {item.title || "Agenda acara"}
+                            </h4>
+                            {item.location ? (
+                              <p className="mt-2 flex min-w-0 max-w-full items-start gap-1 text-xs leading-5 text-[#6e7a72]">
+                                <MapPin
+                                  size={13}
+                                  className="mt-0.5 shrink-0"
+                                  aria-hidden="true"
+                                />
+                                <span className="min-w-0 [overflow-wrap:anywhere]">
+                                  {item.location}
+                                </span>
+                              </p>
+                            ) : null}
+                            {item.description ? (
+                              <p className="mt-2 max-w-full whitespace-pre-wrap text-sm leading-6 text-[#4d594f] [overflow-wrap:anywhere]">
+                                {item.description}
+                              </p>
+                            ) : null}
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                ) : null}
 
                 <section className="jw-scroll-reveal">
                   <p className="text-xs font-semibold uppercase text-[#758178]">
@@ -1552,6 +1681,45 @@ function formatEventDate(schedule: { date: string; time: string }) {
   const time = schedule.time ? schedule.time.replace(":", ".") : "00.00";
 
   return `${date}, ${time} WIB`;
+}
+
+function formatSimpleDate(dateValue: string) {
+  const normalizedDate = dateValue.trim();
+  if (!normalizedDate) return "";
+
+  const timestamp = Date.parse(`${normalizedDate}T00:00:00+07:00`);
+  if (Number.isNaN(timestamp)) return normalizedDate;
+
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "long",
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+  }).format(new Date(timestamp));
+}
+
+function formatRundownTime(item: {
+  date: string;
+  endTime: string;
+  startTime: string;
+}) {
+  const dateLabel = formatSimpleDate(item.date);
+  const startTime = item.startTime ? item.startTime.replace(":", ".") : "";
+  const endTime = item.endTime ? item.endTime.replace(":", ".") : "";
+  const timeLabel =
+    startTime && endTime
+      ? `${startTime} - ${endTime} WIB`
+      : startTime
+        ? `${startTime} WIB`
+        : endTime
+          ? `Sampai ${endTime} WIB`
+          : "";
+
+  if (dateLabel && timeLabel) return `${dateLabel}, ${timeLabel}`;
+  if (dateLabel) return dateLabel;
+  if (timeLabel) return timeLabel;
+
+  return "Waktu menyusul";
 }
 
 function formatCommentDate(submittedAt: string) {
